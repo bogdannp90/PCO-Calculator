@@ -1,5 +1,4 @@
-// --- Fraction Object (for rational arithmetic) ---
-// ... (Fraction object and gcd function from previous response - unchanged) ...
+// --- Fraction Object și gcd (nemodificate) ---
 function gcd(a, b) {
     a = Math.abs(a);
     b = Math.abs(b);
@@ -21,7 +20,7 @@ function Fraction(numerator, denominator = 1) {
         } else {
             const numFloat = parseFloat(numerator);
             if (!Number.isInteger(numFloat)) {
-                let den = 1000000; // Max denominator for float conversion
+                let den = 1000000; 
                 let num = Math.round(numFloat * den);
                 const commonDivisor = gcd(num, den);
                 numerator = num / commonDivisor;
@@ -38,7 +37,6 @@ function Fraction(numerator, denominator = 1) {
         numerator = num / commonDivisor;
         denominator = den / commonDivisor;
     }
-
 
     const common = gcd(numerator, denominator);
     this.num = numerator / common;
@@ -90,7 +88,6 @@ Fraction.abs = function(a) {
     return new Fraction(Math.abs(fA.num), fA.den);
 }
 
-
 // --- Helper Functions ---
 function getElement(id) {
     return document.getElementById(id);
@@ -104,57 +101,56 @@ function appendHtml(htmlContent, areaId = 'resultsArea') {
     getElement(areaId).innerHTML += htmlContent;
 }
 
-function createTableHtml(headers, dataRows, caption, areaId = 'resultsArea') {
-    let html = `<h4>${caption}</h4><table><thead><tr>`;
-    headers.forEach(header => html += `<th>${header}</th>`);
-    html += `</tr></thead><tbody>`;
-    dataRows.forEach(row => {
-        html += `<tr>`;
-        row.forEach(cell => {
-            html += `<td>${(cell instanceof Fraction) ? cell.toString() : cell}</td>`
-        });
-        html += `</tr>`;
-    });
-    html += `</tbody></table>`;
-    appendHtml(html, areaId);
-    return html; // also return for potential direct use
+function formatNumberDisplay(num) {
+    if (Number.isInteger(num)) {
+        return num.toString();
+    }
+    if (Math.abs(num - Math.round(num)) < 1e-9) { 
+        return Math.round(num).toString();
+    }
+    return num.toFixed(5); 
 }
 
-// --- Matrix Input Functions ---
-const defaultMatrix = [ // 
+// --- Matrix Input Functions (nemodificate) ---
+const defaultMatrix = [
     [4, 3, 2],
     [1, 5, 3],
     [2, 2, 4]
 ];
 
 function setupMatrixInputs() {
-    const numRows = parseInt(getElement('numRows').value);
-    const numCols = parseInt(getElement('numCols').value);
-    const table = getElement('matrixInputTable');
-    table.innerHTML = ''; // Clear previous inputs
+    const numRows = parseInt(getElement('numRows').value) || 3;
+    const numCols = parseInt(getElement('numCols').value) || 3;
+    getElement('numRows').value = numRows;
+    getElement('numCols').value = numCols;
 
-    // Create header row for Player B's strategies
+    const table = getElement('matrixInputTable');
+    table.innerHTML = '';
+
     const headerRow = table.insertRow();
-    headerRow.insertCell().outerHTML = "<th>A↓ | B→</th>"; // Corner cell
+    // MODIFICAT: Folosește clasa header-diagonal-light
+    headerRow.insertCell().outerHTML = `<th class="header-diagonal-generated">
+                                        <span class="diag-text-top-right">B</span>
+                                        <span class="diag-text-bottom-left">A</span>
+                                    </th>`;
     for (let j = 0; j < numCols; j++) {
-        headerRow.insertCell().outerHTML = `<th>b${j + 1}</th>`;
+        headerRow.insertCell().outerHTML = `<th>b<sub>${j + 1}</sub></th>`;
     }
 
     for (let i = 0; i < numRows; i++) {
         const row = table.insertRow();
-        row.insertCell().outerHTML = `<th>a${i + 1}</th>`; // Player A's strategy label
+        row.insertCell().outerHTML = `<th>a<sub>${i + 1}</sub></th>`;
         for (let j = 0; j < numCols; j++) {
             const cell = row.insertCell();
             const input = document.createElement('input');
-            input.type = 'text'; // Use text to allow fractions like "5/2" later, or decimals
+            input.type = 'text';
             input.id = `matrix_val_${i}_${j}`;
             input.size = 5;
-            // Populate with default values if dimensions match, or use 0
             if (i < defaultMatrix.length && j < defaultMatrix[0].length &&
                 numRows === defaultMatrix.length && numCols === defaultMatrix[0].length) {
                 input.value = defaultMatrix[i][j];
             } else {
-                input.value = "0"; // Default for new cells or different dimensions
+                input.value = (i===j) ? "1" : "0"; 
             }
             cell.appendChild(input);
         }
@@ -165,90 +161,115 @@ function getMatrixFromInputs() {
     const numRows = parseInt(getElement('numRows').value);
     const numCols = parseInt(getElement('numCols').value);
     const matrix = [];
-    let allNumeric = true;
+    let allValid = true;
 
     for (let i = 0; i < numRows; i++) {
         const row = [];
         for (let j = 0; j < numCols; j++) {
             const inputVal = getElement(`matrix_val_${i}_${j}`).value;
-            const num = parseFloat(inputVal); // Allow decimals for now, Simplex will use Fractions
-            if (isNaN(num)) {
-                allNumeric = false;
+            try {
+                new Fraction(inputVal); 
+                row.push(inputVal); 
+            } catch (e) {
+                allValid = false;
+                alert(`Input invalid "${inputVal}" la linia ${i+1}, coloana ${j+1}. Folosiți numere (ex: 3, 0.5) sau fracții (ex: 5/2).`);
                 break;
             }
-            row.push(num); // Store as number, will be converted to Fraction later
         }
-        if (!allNumeric) break;
+        if (!allValid) break;
         matrix.push(row);
     }
-
-    if (!allNumeric) {
-        alert("Please ensure all matrix inputs are valid numbers.");
-        return null;
-    }
-    return matrix;
+    return allValid ? matrix : null;
 }
 
-
 // --- Game Theory and LP Functions ---
+function afiseazaMatriceJocHtml(gameMatrixStrings) {
+    const gameMatrixNumeric = gameMatrixStrings.map(row => row.map(valStr => new Fraction(valStr).valueOf()));
+    const m = gameMatrixNumeric.length;
+    const n = gameMatrixNumeric[0].length;
 
-function afiseazaMatriceJocHtml(gameMatrix) { // Now takes matrix as param
-    const m = gameMatrix.length;
-    const n = gameMatrix[0].length;
-    const alpha = gameMatrix.map(row => Math.min(...row.map(val => parseFloat(val.toString())))); // Ensure numeric comparison
+    const alpha = gameMatrixNumeric.map(row => Math.min(...row));
     const beta = [];
     for (let j = 0; j < n; j++) {
-        let maxCol = parseFloat(gameMatrix[0][j].toString());
+        let maxCol = gameMatrixNumeric[0][j];
         for (let i = 1; i < m; i++) {
-            if (parseFloat(gameMatrix[i][j].toString()) > maxCol) maxCol = parseFloat(gameMatrix[i][j].toString());
+            if (gameMatrixNumeric[i][j] > maxCol) maxCol = gameMatrixNumeric[i][j];
         }
         beta.push(maxCol);
     }
 
-    let headers = ["", "A↓ | B→"];
-    for (let j = 0; j < n; j++) headers.push(`b${j+1}`);
-    headers.push("α = MIN linii");
-
-    let dataRows = [];
-    for (let i = 0; i < m; i++) {
-        let row = [`x${i+1}`, `a${i+1}`];
-        for (let j = 0; j < n; j++) row.push(new Fraction(gameMatrix[i][j].toString()));
-        row.push(new Fraction(alpha[i].toString()));
-        dataRows.push(row);
-    }
-
-    let betaRow = ["", "β = MAX coloane"];
-    for (let j = 0; j < n; j++) betaRow.push(new Fraction(beta[j].toString()));
-    betaRow.push(""); // Empty cell for alpha column
-    dataRows.push(betaRow);
-
-    createTableHtml(headers, dataRows, "Matricea de Joc Introdusă (Payoff pentru A)");
-
     const v1 = Math.max(...alpha);
     const v2 = Math.min(...beta);
-    appendHtml(`<p>V1 (Maximin) = ${v1}</p>`);
-    appendHtml(`<p>V2 (Minimax) = ${v2}</p>`);
-    if (v1 === v2) {
-        appendHtml(`<p style="color: green;">Punct șa găsit: V = ${v1}. Jocul are o soluție în strategii pure.</p>`);
-    } else {
-        appendHtml(`<p>V1 ≠ V2 (${v1} < ${v2}). Nu există punct șa. Se caută soluții în strategii mixte. Valoarea jocului V aparține [${v1}, ${v2}].</p>`);
+
+    // Construiește HTML-ul pentru tabel
+    let tableTitleHtml = `<h4>Matricea de Joc Introdusă (Payoff pentru A)</h4>`;
+    let tableContentHtml = `<table class="game-display-table"><thead><tr>`;
+    tableContentHtml += `<th class='header-diagonal-generated'>
+                            <span class="diag-text-top-right">B</span>
+                            <span class="diag-text-bottom-left">A</span>
+                         </th>`;
+    for (let j = 0; j < n; j++) {
+        tableContentHtml += `<th>b<sub>${j + 1}</sub></th>`;
     }
+    tableContentHtml += `<th class="summary-column">α = MIN linii</th></tr></thead><tbody>`;
+
+    for (let i = 0; i < m; i++) {
+        tableContentHtml += `<tr><th>a<sub>${i + 1}</sub></th>`;
+        for (let j = 0; j < n; j++) {
+            tableContentHtml += `<td>${new Fraction(gameMatrixStrings[i][j]).toString()}</td>`;
+        }
+        tableContentHtml += `<td class="summary-column">${new Fraction(alpha[i].toString()).toString()}</td></tr>`;
+    }
+    
+    tableContentHtml += `<tr><th>β=MAX col</th>`; 
+    for (let j = 0; j < n; j++) {
+        tableContentHtml += `<td>${new Fraction(beta[j].toString()).toString()}</td>`;
+    }
+    tableContentHtml += `<td class="v1v2-diagonal-cell summary-column">
+                            <span class="v1-text">V<sub>1</sub> = MAX(α) = ${formatNumberDisplay(v1)}</span>
+                            <span class="v2-text">V<sub>2</sub> = MIN(β) = ${formatNumberDisplay(v2)}</span>
+                         </td>`; 
+    tableContentHtml += `</tbody></table>`;
+
+    // Construiește HTML-ul pentru textul analizei V1/V2
+    let analysisParagraphHtml = '';
+    if (Math.abs(v1 - v2) < 1e-9) {
+        analysisParagraphHtml = `<p class="saddle-point-found">Punct șa găsit: V = ${formatNumberDisplay(v1)}. Jocul are o soluție în strategii pure.</p>`;
+    } else {
+        analysisParagraphHtml = `<p>V1 (${formatNumberDisplay(v1)}) ≠ V2 (${formatNumberDisplay(v2)}). Nu există punct șa. Se caută soluții în strategii mixte. Valoarea jocului V aparține [${formatNumberDisplay(v1)}, ${formatNumberDisplay(v2)}].</p>`;
+    }
+
+    // Combină tabelul și analiza într-un container flex
+    let finalHtml = `
+        <div class="game-matrix-container">
+            <div class="game-matrix-table-wrapper">
+                ${tableTitleHtml}
+                ${tableContentHtml}
+            </div>
+            <div class="game-matrix-analysis-wrapper">
+                <h5>Analiza Inițială a Jocului</h5>
+                ${analysisParagraphHtml}
+            </div>
+        </div>`;
+    appendHtml(finalHtml);
+
     return { v1: v1, v2: v2 };
 }
 
-function genereazaPlJocHtml(gameMatrix) { // Now takes matrix as param
-    const numRows = gameMatrix.length; // Player A strategies
-    const numCols = gameMatrix[0].length; // Player B strategies
+function genereazaPlJocHtml(gameMatrixStrings) { 
+    const gameMatrix = gameMatrixStrings.map(row => row.map(valStr => new Fraction(valStr)));
+    const numRows = gameMatrix.length; 
+    const numCols = gameMatrix[0].length; 
 
     let html = `<h3>Problema de Programare Liniară pentru Jucătorul A (MIN)</h3>`;
     let fx = [];
-    for (let i = 0; i < numRows; i++) fx.push(`x${i+1}`);
+    for (let i = 0; i < numRows; i++) fx.push(`x<sub>${i+1}</sub>`);
     html += `<p>Minimizăm: f(x) = ${fx.join(' + ')}</p>`;
     html += `<p>Restricții:</p><ul>`;
-    for (let j = 0; j < numCols; j++) { // One restriction for each of Player B's strategies
+    for (let j = 0; j < numCols; j++) { 
         let restriction = [];
-        for (let i = 0; i < numRows; i++) { // Sum over Player A's strategies
-            restriction.push(`${new Fraction(gameMatrix[i][j].toString()).toString()} * x${i+1}`);
+        for (let i = 0; i < numRows; i++) { 
+            restriction.push(`${gameMatrix[i][j].toString()} * x<sub>${i+1}</sub>`);
         }
         html += `<li>${restriction.join(' + ')} >= 1</li>`;
     }
@@ -256,13 +277,13 @@ function genereazaPlJocHtml(gameMatrix) { // Now takes matrix as param
 
     html += `<h3>Problema de Programare Liniară pentru Jucătorul B (MAX)</h3>`;
     let gy = [];
-    for (let j = 0; j < numCols; j++) gy.push(`y${j+1}`);
+    for (let j = 0; j < numCols; j++) gy.push(`y<sub>${j+1}</sub>`);
     html += `<p>Maximizăm: g(y) = ${gy.join(' + ')}</p>`;
     html += `<p>Restricții:</p><ul>`;
-    for (let i = 0; i < numRows; i++) { // One restriction for each of Player A's strategies
+    for (let i = 0; i < numRows; i++) { 
         let restriction = [];
-        for (let j = 0; j < numCols; j++) { // Sum over Player B's strategies
-            restriction.push(`${new Fraction(gameMatrix[i][j].toString()).toString()} * y${j+1}`);
+        for (let j = 0; j < numCols; j++) { 
+            restriction.push(`${gameMatrix[i][j].toString()} * y<sub>${j+1}</sub>`);
         }
         html += `<li>${restriction.join(' + ')} <= 1</li>`;
     }
@@ -270,293 +291,413 @@ function genereazaPlJocHtml(gameMatrix) { // Now takes matrix as param
     appendHtml(html);
 }
 
-function rezolvaPLB_js(gameMatrix, v1Initial, v2Initial) { // Takes matrix as param
+// --- MODIFICAT: generateSimplexIterationHtml ---
+// Returnează DOAR HTML-ul tabelului, fără H4. H4 va fi adăugat în rezolvaPLB_js
+function generateSimplexTableHtml( // Nume schimbat pentru claritate
+    c_objective_coeffs, 
+    numDecisionVars, 
+    numSlackVars, 
+    totalVars_LP,
+    tableauRowsData,
+    z_value, 
+    cj_zj_values, 
+    pivotCol_0_indexed, 
+    pivotRow_0_indexed,
+    isInitialTableau,
+    iterationNum 
+) {
+    let html = `<table><thead>`;
+
+    if (isInitialTableau) {
+        html += `<tr>`;
+        // MODIFICAT: Adăugat rowspan="2" și stil pentru aliniere verticală pentru MAX
+        // Stilurile inline pentru background și color au fost deja eliminate anterior
+        html += `<th colspan="3" rowspan="2" style="vertical-align: middle;">MAX</th>`; 
+        for (let j = 0; j < numDecisionVars; j++) {
+            html += `<th>y<sub>${j + 1}</sub></th>`;
+        }
+        for (let j = 0; j < numSlackVars; j++) {
+            html += `<th>U<sub>${j + 1}</sub></th>`;
+        }
+        html += `</tr>`; 
+
+        html += `<tr>`;
+        // MODIFICAT: Eliminat th-ul gol care era sub MAX colspan="3"
+        // Celulele pentru Cj coefficients încep direct
+        for (let j = 0; j < c_objective_coeffs.length; j++) {
+            html += `<th>${c_objective_coeffs[j].toString()}</th>`;
+        }
+        html += `</tr>`;
+    }
+
+    html += `<tr>`;
+    html += `<th>C<sub>B</sub></th><th>B</th><th>X<sub>B</sub></th>`;
+    for (let j = 0; j < totalVars_LP; j++) { 
+        let colName = `a<sub>${j + 1}</sub>`;
+        if (j === pivotCol_0_indexed && pivotCol_0_indexed !== -1) { 
+            colName += " <span style='color:#e74c3c; font-weight:bold;'>&darr;</span>";
+        }
+        html += `<th>${colName}</th>`;
+    }
+    html += `</tr>`;
+    html += `</thead><tbody>`;
+
+    tableauRowsData.forEach((rowData, rIdx) => {
+        html += `<tr>`;
+        html += `<td>${rowData.cb.toString()}</td>`;
+        let basicVar_ak_Name = `a<sub>${rowData.b_idx + 1}</sub>`;
+        if (rIdx === pivotRow_0_indexed && pivotRow_0_indexed !== -1) { 
+            basicVar_ak_Name += " <span style='color:#3498db; font-weight:bold;'>&uarr;</span>";
+        }
+        html += `<td>${basicVar_ak_Name}</td>`;
+        html += `<td>${rowData.xb.toString()}</td>`;
+        rowData.coeffs.forEach(coeff => {
+            html += `<td>${coeff.toString()}</td>`;
+        });
+        html += `</tr>`;
+    });
+    html += `</tbody><tfoot>`;
+    
+    let zLabel = `Z<sup>${iterationNum}</sup>`;
+    if (isInitialTableau && iterationNum === 0) { 
+         html += `<tr><td>Z<sup>0</sup>=${z_value.toString()}</td><td></td><td></td>`; 
+    } else { 
+        html += `<tr><td colspan="3" style="text-align:right;">${zLabel} = ${z_value.toString()}</td>`;
+    }
+
+    cj_zj_values.forEach(val => {
+        html += `<td>${val.toString()}</td>`;
+    });
+    html += `</tr>`; 
+    html += `</tfoot></table>`;
+    return html;
+}
+
+function afiseazaInterpretareRezultate(x_optimal_strategies, y_optimal_strategies, V_game, numRows_A, numCols_B) {
+    let html = `<h4 style="margin-top: 25px;">Interpretarea Rezultatelor</h4>`;
+
+    // Interpretare pentru Jucătorul A
+    html += `<div style="border: 1px solid #eee; padding: 10px; margin-bottom:15px; background-color: #fdfdfd;">`;
+    html += `<p><strong>Pentru Jucătorul A:</strong></p><ul style="list-style-type: none; padding-left: 10px;">`;
+    for (let i = 0; i < numRows_A; i++) {
+        const probValue = x_optimal_strategies[i].valueOf(); // Valoarea probabilității ca număr
+        // MODIFICAT: Calculează procentul cu o zecimală și înlocuiește punctul cu virgula
+        const percentageNum = probValue * 100;
+        const percentageFormatted = percentageNum.toFixed(1).replace('.', ','); // Ex: "25.7" devine "25,7"
+        
+        if (probValue > 1e-9) { // Afișează doar strategiile cu probabilitate nenulă
+            html += `<li>Strategia a<sub>${i + 1}</sub> ar trebui aplicată cu probabilitatea ${x_optimal_strategies[i].toString()} ( ${percentageFormatted}% )</li>`;
+        }
+    }
+    html += `</ul>`;
+    html += `<p>Aplicând acest amestec optim de strategii, Jucătorul A își poate asigura un câștig mediu de cel puțin <strong>V = ${V_game.toString()}</strong> (${formatNumberDisplay(V_game.valueOf())}) pe termen lung, indiferent de strategia aleasă de Jucătorul B.</p>`;
+    html += `</div>`;
+
+    // Interpretare pentru Jucătorul B
+    html += `<div style="border: 1px solid #eee; padding: 10px; background-color: #fdfdfd;">`;
+    html += `<p><strong>Pentru Jucătorul B:</strong></p><ul style="list-style-type: none; padding-left: 10px;">`;
+    for (let j = 0; j < numCols_B; j++) {
+        const probValue = y_optimal_strategies[j].valueOf(); // Valoarea probabilității ca număr
+        // MODIFICAT: Calculează procentul cu o zecimală și înlocuiește punctul cu virgula
+        const percentageNum = probValue * 100;
+        const percentageFormatted = percentageNum.toFixed(1).replace('.', ','); // Ex: "33.3" devine "33,3"
+
+         if (probValue > 1e-9) { // Afișează doar strategiile cu probabilitate nenulă
+            html += `<li>Strategia b<sub>${j + 1}</sub> ar trebui aplicată cu probabilitatea ${y_optimal_strategies[j].toString()} ( ${percentageFormatted}% )</li>`;
+        }
+    }
+    html += `</ul>`;
+    html += `<p>Aplicând acest amestec optim de strategii, Jucătorul B se poate asigura că pierderea sa medie nu va depăși <strong>V = ${V_game.toString()}</strong> (${formatNumberDisplay(V_game.valueOf())}) pe termen lung, indiferent de strategia aleasă de Jucătorul A.</p>`;
+    html += `</div>`;
+
+    appendHtml(html);
+}
+
+// --- MODIFICAT: rezolvaPLB_js ---
+function rezolvaPLB_js(gameMatrixStrings, v1Initial, v2Initial) {
     appendHtml(`<h2>Algoritmul Simplex pentru Problema PLB (Jucătorul B - MAX)</h2>`);
+    const gameMatrix = gameMatrixStrings.map(row => row.map(valStr => new Fraction(valStr)));
 
-    const numRows_A = gameMatrix.length;    // Strategies of Player A, becomes number of constraints for Player B's LP
-    const numCols_B = gameMatrix[0].length; // Strategies of Player B, becomes number of decision variables for Player B's LP
-
-    // Variables for Player B's LP: y1, ..., y_numCols_B (decision) and u1, ..., u_numRows_A (slack)
+    const numRows_A = gameMatrix.length;
+    const numCols_B = gameMatrix[0].length;
     const numDecisionVars_B = numCols_B;
     const numSlackVars_LP = numRows_A;
     const totalVars_LP = numDecisionVars_B + numSlackVars_LP;
 
-    // Objective function for Player B: Max Z = y1 + y2 + ... + y_numCols_B
     let c_objective = [];
     for (let j = 0; j < numDecisionVars_B; j++) c_objective.push(new Fraction(1));
     for (let i = 0; i < numSlackVars_LP; i++) c_objective.push(new Fraction(0));
 
-    // Initial Simplex Tableau
-    // Each row corresponds to a constraint from Player A's strategies
-    // gameMatrix[i][0]*y1 + ... + gameMatrix[i][numCols_B-1]*y_numCols_B + u_i+1 = 1
-    let tableau = [];
-    for (let i = 0; i < numRows_A; i++) { // For each strategy of Player A / each constraint
-        let row = [];
-        row.push(numDecisionVars_B + i); // Index of basic variable u_i+1 (0-indexed for slack array)
-        row.push(new Fraction(0));       // CB for slack variable is 0
-        row.push(new Fraction(1));       // XB (RHS of constraint) is 1
-
-        // Coefficients for y_j decision variables
+    let tableau = []; 
+    for (let i = 0; i < numRows_A; i++) {
+        let currentCoeffs = [];
         for (let j = 0; j < numDecisionVars_B; j++) {
-            row.push(new Fraction(gameMatrix[i][j].toString()));
+            currentCoeffs.push(new Fraction(gameMatrix[i][j]));
         }
-        // Coefficients for u_k slack variables
         for (let k = 0; k < numSlackVars_LP; k++) {
-            row.push(new Fraction(i === k ? 1 : 0));
+            currentCoeffs.push(new Fraction(i === k ? 1 : 0));
         }
-        tableau.push(row);
+        tableau.push({
+            b_idx: numDecisionVars_B + i,
+            cb: new Fraction(0),
+            xb: new Fraction(1),
+            coeffs: currentCoeffs
+        });
     }
 
     let iteration = 0;
-    const MAX_ITERATIONS = 25; // Safety break, increased slightly for larger matrices
+    const MAX_ITERATIONS = 25;
 
     while (iteration < MAX_ITERATIONS) {
-        let currentTableHeaders = ["B", "CB", "XB"];
-        for(let j=0; j<numDecisionVars_B; j++) currentTableHeaders.push(`y${j+1}`);
-        for(let j=0; j<numSlackVars_LP; j++) currentTableHeaders.push(`u${j+1}`);
-        
-        let currentTableData = tableau.map(row => {
-            let displayRow = [...row];
-            // displayRow[0] shows index, could be mapped to y_i or u_i for better readability
-            let varName = "";
-            if (row[0] < numDecisionVars_B) varName = `a`;
-            else varName = `a`;
-            displayRow[0] = `${varName}${row[0]}`;
-            return displayRow;
+        const iterationLabelForText = `I<sub>${iteration}</sub>`;
+        const iterationNumberForZ = iteration; 
+
+        let z_current = new Fraction(0);
+        tableau.forEach(row => {
+            z_current = Fraction.add(z_current, Fraction.multiply(row.cb, row.xb));
         });
-        createTableHtml(currentTableHeaders, currentTableData, `Tabelul Simplex ${iteration}`);
-
-
-        let zj_vals = [];
-        for (let j = 0; j < totalVars_LP; j++) {
-            let zj = new Fraction(0);
-            for (let i = 0; i < tableau.length; i++) { // tableau.length is numRows_A
-                zj = Fraction.add(zj, Fraction.multiply(tableau[i][1], tableau[i][3 + j]));
-            }
-            zj_vals.push(zj);
-        }
 
         let cj_zj_vals = [];
         for (let j = 0; j < totalVars_LP; j++) {
-            cj_zj_vals.push(Fraction.subtract(c_objective[j], zj_vals[j]));
-        }
-        
-        let z_current = new Fraction(0);
-        for(let i=0; i<tableau.length; i++) {
-            z_current = Fraction.add(z_current, Fraction.multiply(tableau[i][1], tableau[i][2]));
-        }
-        appendHtml(`<p>Z<sub>${iteration+1}</sub> = ${z_current.toString()}</p>`);
-
-
-        let deltaRowHtml = `<tr><td><strong>Δk (Cj-Zj)</strong></td><td></td><td></td>`; // Adjusted colspan
-        cj_zj_vals.forEach(val => deltaRowHtml += `<td>${val.toString()}</td>`);
-        // Add empty cells if cj_zj_vals is shorter than headers (should not happen if totalVars_LP is correct)
-        for(let k=cj_zj_vals.length; k < numDecisionVars_B + numSlackVars_LP; k++) deltaRowHtml += `<td></td>`;
-        deltaRowHtml += `</tr>`;
-        
-        let resultsDiv = getElement('resultsArea');
-        let tables = resultsDiv.getElementsByTagName('table');
-        if (tables.length > 0) {
-             tables[tables.length-1].querySelector('tbody').innerHTML += `<tr><td colspan="3"><strong>Δk (Cj-Zj)</strong></td>${cj_zj_vals.map(v => `<td>${v.toString()}</td>`).join('')}</tr>`;
+            let zj_col = new Fraction(0);
+            tableau.forEach(row => {
+                zj_col = Fraction.add(zj_col, Fraction.multiply(row.cb, row.coeffs[j]));
+            });
+            cj_zj_vals.push(Fraction.subtract(c_objective[j], zj_col));
         }
 
-        let max_cj_zj = new Fraction(-Infinity);
-        let pivotColIndex = -1; // This is the actual index in the tableau (0 to totalVars_LP-1)
+        let max_cj_zj_val = new Fraction(-Infinity);
+        let pivotCol_0_indexed_for_current_step = -1;
         for (let j = 0; j < totalVars_LP; j++) {
-            if (cj_zj_vals[j].valueOf() > 0 && cj_zj_vals[j].valueOf() > max_cj_zj.valueOf()) { // Stricter greater than 0 for entering
-                max_cj_zj = cj_zj_vals[j];
-                pivotColIndex = j;
-            }
-        }
-
-        if (pivotColIndex === -1 || max_cj_zj.valueOf() <= 1e-9) { // Adding tolerance for float comparison from valueOf
-            appendHtml("<p><strong>Toți Δk (Cj-Zj) <= 0 => Am găsit soluția optimă -> STOP Algoritm</strong></p>");
-            break; 
-        }
-        
-        let enteringVarName = pivotColIndex < numDecisionVars_B ? `y${pivotColIndex+1}` : `u${pivotColIndex - numDecisionVars_B + 1}`;
-        appendHtml(`<p>Variabila care intră în bază (coloana pivot): ${enteringVarName} (index ${pivotColIndex}, Δk = ${max_cj_zj.toString()})</p>`);
-
-        let minRatio = new Fraction(Infinity);
-        let pivotRowIndex = -1;
-        for (let i = 0; i < tableau.length; i++) {
-            const A_ik = tableau[i][3 + pivotColIndex]; 
-            if (A_ik.valueOf() > 1e-9) { // Tolerance for pivot element A_ik > 0
-                const ratio = Fraction.divide(tableau[i][2] , A_ik);
-                if (ratio.valueOf() >= 0 && ratio.valueOf() < minRatio.valueOf()) { // Ratio must be non-negative
-                    minRatio = ratio;
-                    pivotRowIndex = i;
+            if (cj_zj_vals[j].valueOf() > 1e-9) { 
+                if (cj_zj_vals[j].valueOf() > max_cj_zj_val.valueOf()){
+                    max_cj_zj_val = cj_zj_vals[j];
+                    pivotCol_0_indexed_for_current_step = j;
                 }
             }
         }
-
-        if (pivotRowIndex === -1) {
-            appendHtml("<p><strong>Problemă nelimitată (Unbounded Solution) - Nu s-a găsit nicio variabilă validă pentru a ieși din bază.</strong></p>");
-            return {unbounded: true, g_max: null, tableau: tableau, c_objective: c_objective, cj_zj_vals: cj_zj_vals};
-        }
-        const pivotElement = tableau[pivotRowIndex][3 + pivotColIndex];
-        let leavingVarIdx = tableau[pivotRowIndex][0];
-        let leavingVarName = leavingVarIdx < numDecisionVars_B ? `y${leavingVarIdx+1}` : `u${leavingVarIdx - numDecisionVars_B + 1}`;
-
-        appendHtml(`<p>Variabila care iese din bază (linia pivot): rândul ${pivotRowIndex+1} (variabila ${leavingVarName}, index ${leavingVarIdx})</p>`);
-        appendHtml(`<p>Elementul pivot: ${pivotElement.toString()} (la intersecția rândului ${pivotRowIndex+1} cu coloana ${enteringVarName})</p>`);
         
-        if (Math.abs(pivotElement.valueOf()) < 1e-9) {
-             appendHtml("<p style='color:red;'><strong>EROARE: Elementul pivot este zero! Nu se poate continua. Verificați datele de intrare sau degenerare.</strong></p>");
-             return { error: "Pivot element is zero.", g_max: z_current, tableau: tableau, c_objective: c_objective, cj_zj_vals: cj_zj_vals };
+        let minRatio_val = new Fraction(Infinity); 
+        let pivotRow_0_indexed_for_current_step = -1;
+        if (pivotCol_0_indexed_for_current_step !== -1) { 
+            tableau.forEach((row, rIdx) => {
+                const A_ik = row.coeffs[pivotCol_0_indexed_for_current_step];
+                if (A_ik.valueOf() > 1e-9) { 
+                    const current_ratio = Fraction.divide(row.xb, A_ik);
+                    if (current_ratio.valueOf() >= -1e-9 && current_ratio.valueOf() < minRatio_val.valueOf()) { 
+                        minRatio_val = current_ratio; 
+                        pivotRow_0_indexed_for_current_step = rIdx;
+                    }
+                }
+            });
+        }
+        
+        // --- Început Modificare pentru Layout Flex ---
+        let iterationContainerHtml = `<div class="simplex-iteration-container">`;
+        
+        // Partea stângă: Tabelul Simplex
+        let tableHtmlContent = generateSimplexTableHtml( // Folosim funcția redenumită
+            c_objective,
+            numDecisionVars_B,
+            numSlackVars_LP,
+            totalVars_LP, 
+            tableau.map(r => ({...r})), 
+            z_current,
+            cj_zj_vals, 
+            pivotCol_0_indexed_for_current_step, 
+            pivotRow_0_indexed_for_current_step,
+            iteration === 0,
+            iterationNumberForZ 
+        );
+        iterationContainerHtml += `<div class="simplex-table-wrapper">
+                                     <h4>Tabelul Simplex: ${iterationLabelForText}</h4>
+                                     ${tableHtmlContent}
+                                   </div>`;
+
+        // Partea dreaptă: Analiza Iterației
+        let analysisTextHtml = '<h5>Analiza Iterației:</h5>'; // Titlu pentru secțiunea de analiză
+        let hasAnalysisContent = false;
+
+        if (pivotCol_0_indexed_for_current_step !== -1) {
+            let enteringVarOriginalName = pivotCol_0_indexed_for_current_step < numDecisionVars_B ? 
+                                         `y<sub>${pivotCol_0_indexed_for_current_step + 1}</sub>` : 
+                                         `U<sub>${pivotCol_0_indexed_for_current_step - numDecisionVars_B + 1}</sub>`;
+            let enteringVarName_ak = `a<sub>${pivotCol_0_indexed_for_current_step + 1}</sub>`;
+            
+            analysisTextHtml += `<p>Există &Delta;<sub>k</sub> > 0 (max &Delta;<sub>k</sub> = ${max_cj_zj_val.toString()} pentru variabila ${enteringVarOriginalName}/${enteringVarName_ak}). Se continuă algoritmul.</p>`;
+            hasAnalysisContent = true;
+
+            if (pivotRow_0_indexed_for_current_step !== -1) {
+                let leaving_b_idx = tableau[pivotRow_0_indexed_for_current_step].b_idx;
+                let leavingVarOriginalName = leaving_b_idx < numDecisionVars_B ? 
+                                             `y<sub>${leaving_b_idx + 1}</sub>` : 
+                                             `U<sub>${leaving_b_idx - numDecisionVars_B + 1}</sub>`;
+                let leavingVarName_ak = `a<sub>${leaving_b_idx + 1}</sub>`;
+                let pivotElementActual = tableau[pivotRow_0_indexed_for_current_step].coeffs[pivotCol_0_indexed_for_current_step];
+                
+                analysisTextHtml += `<p>Variabila ${enteringVarOriginalName} (coloana ${enteringVarName_ak}) intră în bază. ` +
+                                   `Variabila ${leavingVarOriginalName} (din rândul bazei ${leavingVarName_ak}) iese din bază (raport minim pozitiv = ${minRatio_val.toString()}). ` +
+                                   `Elementul pivot este ${pivotElementActual.toString()} (la intersecția ${leavingVarName_ak} și ${enteringVarName_ak}).</p>`;
+            } else { // Intrare validă, dar nicio ieșire -> Nemărginit (mesajul va fi adăugat mai jos)
+                 analysisTextHtml += `<p><strong>Problemă nelimitată (Unbounded Solution). Nu se poate selecta o variabilă care să iasă din bază.</strong></p>`;
+                 hasAnalysisContent = true;
+            }
+        } else { // Soluție optimă
+             analysisTextHtml += "<p><strong>Toți &Delta;<sub>k</sub>  <= 0. S-a atins soluția optimă. STOP Algoritm.</strong></p>";
+             hasAnalysisContent = true;
         }
 
+        if (hasAnalysisContent) {
+            iterationContainerHtml += `<div class="simplex-analysis-wrapper">${analysisTextHtml}</div>`;
+        }
+        
+        iterationContainerHtml += `</div>`; // Închide .simplex-iteration-container
+        appendHtml(iterationContainerHtml);
+        // --- Sfârșit Modificare pentru Layout Flex ---
 
-        let newPivotRow = tableau[pivotRowIndex].map((val,idx) => {
-            if (idx >=2) return Fraction.divide(val, pivotElement); 
-            return val; 
-        });
-        newPivotRow[0] = pivotColIndex; 
-        newPivotRow[1] = c_objective[pivotColIndex]; 
-        tableau[pivotRowIndex] = newPivotRow;
+
+        if (pivotCol_0_indexed_for_current_step === -1) { 
+            // Mesajul de optimalitate e deja în analysisTextHtml
+            break;
+        }
+
+        if (pivotRow_0_indexed_for_current_step === -1) { 
+            // Mesajul de problemă nemărginită e deja în analysisTextHtml
+            return { unbounded: true };
+        }
+
+        const pivotElement = tableau[pivotRow_0_indexed_for_current_step].coeffs[pivotCol_0_indexed_for_current_step];
+        if (Math.abs(pivotElement.valueOf()) < 1e-9) {
+            appendHtml("<p style='color:red;'><strong>EROARE: Elementul pivot este zero! Nu se poate continua.</strong></p>");
+            return { error: "Pivot element is zero." };
+        }
+
+        const oldPivotRowXB = tableau[pivotRow_0_indexed_for_current_step].xb;
+        const oldPivotRowCoeffs = [...tableau[pivotRow_0_indexed_for_current_step].coeffs];
+        
+        tableau[pivotRow_0_indexed_for_current_step].xb = Fraction.divide(oldPivotRowXB, pivotElement);
+        tableau[pivotRow_0_indexed_for_current_step].coeffs = oldPivotRowCoeffs.map(c => Fraction.divide(c, pivotElement));
+        
+        tableau[pivotRow_0_indexed_for_current_step].cb = c_objective[pivotCol_0_indexed_for_current_step];
+        tableau[pivotRow_0_indexed_for_current_step].b_idx = pivotCol_0_indexed_for_current_step;
 
         for (let i = 0; i < tableau.length; i++) {
-            if (i !== pivotRowIndex) {
-                const factor = tableau[i][3 + pivotColIndex]; 
-                let updatedRow = tableau[i].map((oldVal, j) => {
-                     if (j >= 2) { 
-                        return Fraction.subtract(oldVal, Fraction.multiply(factor, tableau[pivotRowIndex][j]));
-                     }
-                     return oldVal; 
-                });
-                tableau[i] = updatedRow;
+            if (i !== pivotRow_0_indexed_for_current_step) {
+                const factor = tableau[i].coeffs[pivotCol_0_indexed_for_current_step];
+                tableau[i].xb = Fraction.subtract(tableau[i].xb, Fraction.multiply(factor, tableau[pivotRow_0_indexed_for_current_step].xb));
+                for (let j = 0; j < totalVars_LP; j++) {
+                    tableau[i].coeffs[j] = Fraction.subtract(tableau[i].coeffs[j], Fraction.multiply(factor, tableau[pivotRow_0_indexed_for_current_step].coeffs[j]));
+                }
             }
         }
         iteration++;
-         if (iteration >= MAX_ITERATIONS) {
-            appendHtml("<p><strong>Numărul maxim de iterații atins.</strong></p>");
+        if (iteration >= MAX_ITERATIONS) {
+            appendHtml("<div class='simplex-iteration-container'><div class='simplex-analysis-wrapper'><p><strong>Numărul maxim de iterații atins.</strong></p></div></div>");
             break;
         }
     }
 
-    // Recalculate final Z and Cj-Zj
+    // --- Solution Extraction ---
     let g_max_final = new Fraction(0);
     tableau.forEach(row => {
-        g_max_final = Fraction.add(g_max_final, Fraction.multiply(row[1], row[2]));
+        g_max_final = Fraction.add(g_max_final, Fraction.multiply(row.cb, row.xb));
     });
 
-    let final_cj_zj_vals = [];
+    let final_cj_zj_vals = []; 
     for (let j = 0; j < totalVars_LP; j++) {
         let zj = new Fraction(0);
-        for (let i = 0; i < tableau.length; i++) {
-            zj = Fraction.add(zj, Fraction.multiply(tableau[i][1], tableau[i][3 + j]));
-        }
+        tableau.forEach(row => {
+            zj = Fraction.add(zj, Fraction.multiply(row.cb, row.coeffs[j]));
+        });
         final_cj_zj_vals.push(Fraction.subtract(c_objective[j], zj));
     }
-    
-    appendHtml(`<h4>Soluția Problemei PLB (Player B):</h4>`);
-    appendHtml(`<p>MAX(g) = ${g_max_final.toString()} (${g_max_final.valueOf().toFixed(5)})</p>`);
-    
-    let y_B_solution = {};
-    for(let j=0; j<numDecisionVars_B; j++) y_B_solution[`y${j+1}`] = new Fraction(0); 
 
+    // Afișarea soluțiilor finale sub ultimul tabel/analiză
+    let solutionHtml = `<h3>Soluția Problemei PLB (derulată din ultimul tabel Simplex):</h3>`;
+    solutionHtml += `<p>MAX(g) = ${g_max_final.toString()} (${formatNumberDisplay(g_max_final.valueOf())})</p>`;
+    
+    let y_B_solution_aux = {}; 
+    for(let j=0; j<numDecisionVars_B; j++) y_B_solution_aux[`y${j+1}`] = new Fraction(0); 
     tableau.forEach(row => {
-        const varIndex = row[0]; 
-        if (varIndex < numDecisionVars_B) { 
-            y_B_solution[`y${varIndex + 1}`] = row[2]; 
+        if (row.b_idx < numDecisionVars_B) { 
+            y_B_solution_aux[`y${row.b_idx + 1}`] = row.xb; 
         }
     });
-    
     let y_B_str_parts = [];
     for (let j=0; j < numDecisionVars_B; j++) {
-        y_B_str_parts.push(`y${j+1} = ${y_B_solution[`y${j+1}`].toString()}`);
+        y_B_str_parts.push(`y<sub>${j+1}</sub> = ${y_B_solution_aux[`y${j+1}`].toString()}`);
     }
-    appendHtml(`<p>y_B (strategii auxiliare pentru B) = (${y_B_str_parts.join(', ')})</p>`);
+    solutionHtml += `<p>y<sub>B</sub> (soluții auxiliare pentru B) = (${y_B_str_parts.join(', ')})</p>`;
 
-    appendHtml(`<h4>Soluția Problemei PLA (Player A):</h4>`);
-    appendHtml(`<p>MIN(f) = ${g_max_final.toString()} (valoarea problemei duale auxiliare)</p>`);
+    solutionHtml += `<h3>Soluția Problemei PLA (derulată din ultimul tabel Simplex):</h3>`;
+    solutionHtml += `<p>MIN(f) = ${g_max_final.toString()} (${formatNumberDisplay(g_max_final.valueOf())})</p>`;
     
-    let x_A_aux_solution = {};
-    for (let i = 0; i < numSlackVars_LP; i++) { // numSlackVars_LP is numRows_A
-        // Cj-Zj for slack variables (u1, u2, ..., u_numRows_A)
-        // Slack u_k is at index (numDecisionVars_B + k) in c_objective and final_cj_zj_vals
-        x_A_aux_solution[`x${i + 1}`] = Fraction.abs(final_cj_zj_vals[numDecisionVars_B + i]);
+    let x_A_solution_aux = {}; 
+    for (let i = 0; i < numSlackVars_LP; i++) { 
+        x_A_solution_aux[`x${i + 1}`] = Fraction.abs(final_cj_zj_vals[numDecisionVars_B + i]);
     }
     let x_A_aux_str_parts = [];
      for (let i=0; i < numSlackVars_LP; i++) { 
-        x_A_aux_str_parts.push(`x${i+1} = ${x_A_aux_solution[`x${i+1}`].toString()}`);
+        x_A_aux_str_parts.push(`x<sub>${i+1}</sub> = ${x_A_solution_aux[`x${i+1}`].toString()}`);
     }
-    appendHtml(`<p>x_A (strategii auxiliare pentru A) = (${x_A_aux_str_parts.join(', ')})</p>`);
+    solutionHtml += `<p>x<sub>A</sub> (soluții auxiliare pentru A) = (${x_A_aux_str_parts.join(', ')})</p>`;
+    appendHtml(solutionHtml);
     
-    appendHtml(`<h4>Soluția Jocului:</h4>`);
-    if (g_max_final.num === 0 && g_max_final.den !== 0) { // Check if g_max is exactly zero
-        appendHtml("<p>Valoarea jocului auxiliar g_max este 0. </p>");
-        // If g_max is 0, V = 1/0 is undefined. This can happen in certain games.
-        // Or if the game is not strictly determined and requires shifting.
-        // The current formulation assumes V > 0.
-        // For now, we'll state the strategies found for the auxiliary problem.
-        // A more robust solution might involve shifting the payoff matrix if g_max is not positive.
-        if(v1Initial === 0 && v2Initial === 0) { // Special case if saddle point at 0
-            appendHtml(`<p>Valoarea Jocului V = 0 (bazat pe V1=V2=0)</p>`);
-            appendHtml(`<p>Strategiile optime trebuie determinate prin inspecție (strategii pure).</p>`);
-        } else {
-            appendHtml(`<p style="color:orange;">Valoarea jocului auxiliar g_max este 0. Formula V = 1/g_max nu se poate aplica direct. Acest algoritm presupune o valoare a jocului pozitivă după transformare. Considerați adăugarea unei constante la toate elementele matricii dacă valoarea jocului este non-pozitivă.</p>`);
-        }
-        return { error: "g_max is zero", g_max: g_max_final, x_A_aux: x_A_aux_solution, y_B_aux: y_B_solution};
-    }
-     if (g_max_final.num === 0) { // More general check for g_max being zero.
-        appendHtml("<p style='color:red;'>Valoarea funcției obiectiv g_max este zero. Nu se poate calcula V = 1/g_max.</p>");
+    appendHtml(`<h3>Soluția Jocului:</h3>`);
+    if (g_max_final.num === 0) {
+        appendHtml("<p style='color:red;'>Valoarea funcției obiectiv g_max este zero. Nu se poate calcula V = 1/g_max. Acest lucru poate indica necesitatea unei translații a matricii de joc.</p>");
+        afiseazaInterpretareRezultate([], [], new Fraction(0), numRows_A, numCols_B, true);
         return { error: "g_max is zero for V calculation." };
     }
 
-
     const V_game = Fraction.divide(new Fraction(1), g_max_final);
-    appendHtml(`<p>V (Valoarea Jocului) = 1 / g_max = 1 / ${g_max_final.toString()} = ${V_game.toString()} (${V_game.valueOf().toFixed(5)})</p>`);
+    appendHtml(`<p>V (Valoarea Jocului) = ${V_game.toString()} (${formatNumberDisplay(V_game.valueOf())})</p>`);
 
-    let x_optimal_str_parts = [];
-    for (let i = 0; i < numSlackVars_LP; i++) { // numRows_A strategies for Player A
-        const x_opt_i = Fraction.multiply(x_A_aux_solution[`x${i+1}`], V_game);
-        x_optimal_str_parts.push(`x${i+1}* = ${x_opt_i.toString()}`);
+    let x_optimal_strategies = [];
+    for (let i = 0; i < numSlackVars_LP; i++) { 
+        x_optimal_strategies.push(Fraction.multiply(x_A_solution_aux[`x${i+1}`], V_game));
     }
-    appendHtml(`<p>Strategia optimă pentru Jucătorul A: x*_opt = (${x_optimal_str_parts.join(', ')})</p>`);
+    let x_optimal_str_parts = x_optimal_strategies.map((val, idx) => `x<sub>${idx+1}</sub> = ${val.toString()}`);
+    appendHtml(`<p>Strategia optimă pentru Jucătorul A: x<sub>opt</sub> = (${x_optimal_str_parts.join(', ')})</p>`);
 
-    let y_optimal_str_parts = [];
-    for (let j = 0; j < numDecisionVars_B; j++) { // numCols_B strategies for Player B
-         const y_opt_j = Fraction.multiply(y_B_solution[`y${j+1}`], V_game);
-         y_optimal_str_parts.push(`y${j+1}* = ${y_opt_j.toString()}`);
+    let y_optimal_strategies = [];
+    for (let j = 0; j < numDecisionVars_B; j++) { 
+         y_optimal_strategies.push(Fraction.multiply(y_B_solution_aux[`y${j+1}`], V_game));
     }
-    appendHtml(`<p>Strategia optimă pentru Jucătorul B: y*_opt = (${y_optimal_str_parts.join(', ')})<sup>T</sup></p>`);
+    let y_optimal_str_parts = y_optimal_strategies.map((val, idx) => `y<sub>${idx+1}</sub> = ${val.toString()}`);
+    appendHtml(`<p>Strategia optimă pentru Jucătorul B: y<sub>opt</sub> = (${y_optimal_str_parts.join(', ')})<sup>T</sup></p>`);
 
-    appendHtml(`<p>Verificare: Valoarea jocului V=${V_game.toString()} (${V_game.valueOf().toFixed(3)}). Intervalul inițial din matricea de joc: [${v1Initial}, ${v2Initial}].</p>`);
-     if (V_game.valueOf() >= v1Initial - 1e-9 && V_game.valueOf() <= v2Initial + 1e-9) { // Added tolerance
+    appendHtml(`<p>Verificare: Valoarea jocului V=${V_game.toString()} (${formatNumberDisplay(V_game.valueOf())}). Intervalul inițial din matricea de joc: [${formatNumberDisplay(v1Initial)}, ${formatNumberDisplay(v2Initial)}].</p>`);
+     if (V_game.valueOf() >= v1Initial - 1e-9 && V_game.valueOf() <= v2Initial + 1e-9) { 
         appendHtml(`<p style="color:green;">Valoarea jocului este în intervalul așteptat.</p>`);
     } else {
-        appendHtml(`<p style="color:orange;">Atenție: Valoarea calculată a jocului (${V_game.valueOf().toFixed(5)}) este în afara intervalului inițial [${v1Initial}, ${v2Initial}]. Acest lucru se poate întâmpla dacă jocul original are o valoare non-pozitivă și nu s-a aplicat o translație a matricii pentru a asigura pozitivitatea înainte de rezolvarea LP-ului auxiliar. Algoritmul curent presupune că valoarea jocului V este pozitivă.</p>`);
+        appendHtml(`<p style="color:orange;">Atenție: Valoarea calculată a jocului (${formatNumberDisplay(V_game.valueOf())}) este în afara intervalului inițial [${formatNumberDisplay(v1Initial)}, ${formatNumberDisplay(v2Initial)}].</p>`);
     }
-     return { V_game: V_game, g_max: g_max_final, x_opt: x_optimal_str_parts, y_opt: y_optimal_str_parts };
-}
 
+    afiseazaInterpretareRezultate(x_optimal_strategies, y_optimal_strategies, V_game, numRows_A, numCols_B);
+}
 
 function runSolver() {
     clearResults();
     appendHtml("<h2>Procesul de Rezolvare</h2>");
 
-    const gameMatrixNumeric = getMatrixFromInputs();
-    if (!gameMatrixNumeric) {
+    const gameMatrixStrings = getMatrixFromInputs();
+    if (!gameMatrixStrings) {
         appendHtml("<p style='color:red;'>Rezolvare anulată din cauza datelor de intrare invalide.</p>");
         return;
     }
     
-    // Convert to strings for Fraction consistency if needed, or use directly if Fraction handles numbers
-    const gameMatrix = gameMatrixNumeric.map(row => row.map(val => val.toString()));
+    const initialCheck = afiseazaMatriceJocHtml(gameMatrixStrings);
+    genereazaPlJocHtml(gameMatrixStrings);
 
-
-    const initialCheck = afiseazaMatriceJocHtml(gameMatrixNumeric); // Pass numeric for min/max
-    genereazaPlJocHtml(gameMatrix); // Pass string version for Fraction display
-
-    if (initialCheck.v1 === initialCheck.v2) {
+    if (Math.abs(initialCheck.v1 - initialCheck.v2) < 1e-9) {
+        const V_saddle = new Fraction(initialCheck.v1);
         appendHtml(`<h4>Soluția Jocului (Punct Șa):</h4>`);
-        appendHtml(`<p>Valoarea Jocului V = ${initialCheck.v1}.</p>`);
-        appendHtml(`<p>Jocul are o soluție în strategii pure. Identificați strategiile corespunzătoare maximinului și minimaxului.</p>`);
+        appendHtml(`<p>Valoarea Jocului V = ${formatNumberDisplay(V_saddle.valueOf())}.</p>`);
+        appendHtml(`<p>Jocul are o soluție în strategii pure. Jucătorul A ar trebui să aleagă strategia (sau una dintre strategiile) care îi garantează câștigul ${formatNumberDisplay(V_saddle.valueOf())}, iar Jucătorul B ar trebui să aleagă strategia (sau una dintre strategiile) care limitează pierderea la ${formatNumberDisplay(V_saddle.valueOf())}. Aceste strategii corespund elementului (elementelor) șa din matrice.</p>`);
     } else {
-        rezolvaPLB_js(gameMatrix, initialCheck.v1, initialCheck.v2);
+        rezolvaPLB_js(gameMatrixStrings, initialCheck.v1, initialCheck.v2);
     }
 }
 
-// Initialize matrix inputs on page load
 window.onload = setupMatrixInputs;

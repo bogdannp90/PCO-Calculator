@@ -1,0 +1,652 @@
+/* Resetare de bază și stiluri generale pentru corp */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa; 
+    color: #343a40; 
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1300px; 
+    margin: 25px auto;
+    padding: 25px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+}
+
+/* Titluri */
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.2em;
+}
+
+h2 { 
+    color: #34495e;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 10px;
+    font-size: 1.8em;
+}
+
+h3 { 
+    color: #495057;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    border-bottom: 1px dashed #ced4da;
+    padding-bottom: 8px;
+}
+
+h4 { 
+    color: #17a2b8; 
+    margin-top: 25px;
+    margin-bottom: 10px;
+    font-size: 1.25em;
+}
+
+/* Secțiuni de Input */
+.input-controls, .matrix-input-area {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+}
+
+.input-controls label {
+    margin-right: 8px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.input-controls input[type="number"] {
+    width: 65px;
+    padding: 8px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-right: 20px;
+    box-sizing: border-box;
+}
+
+/* Butoane */
+button {
+    padding: 10px 20px;
+    background-color: #007bff; 
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-right: 10px;
+    margin-top: 5px; 
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+button:hover {
+    background-color: #0056b3;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+button:active {
+    background-color: #004085;
+}
+
+button#clearResultsBtn {
+    background-color: #dc3545; 
+}
+button#clearResultsBtn:hover {
+    background-color: #c82333;
+}
+
+/* Inputul Matricii */
+#matrixInputContainer h4 {
+    margin-top: 0;
+    border-bottom: none;
+    color: #495057; 
+}
+
+#matrixInputTable {
+    margin-top: 15px;
+}
+
+#matrixInputTable input[type="text"] {
+    width: 60px;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+#matrixInputTable th, #matrixInputTable td {
+    padding: 5px; 
+}
+
+/* Stiluri Generale pentru Tabele */
+table {
+    width: auto; 
+    min-width: 500px; 
+    max-width: 100%; 
+    border-collapse: separate; 
+    border-spacing: 0;
+    margin: 20px 0; 
+    font-size: 0.9em;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.07);
+    border-radius: 6px; 
+    overflow: hidden; 
+    display: block; 
+    overflow-x: auto;
+}
+
+th, td {
+    border: 1px solid #e9ecef; 
+    padding: 10px 14px; 
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Antetul Tabelului implicit (închis, pentru Simplex etc.) */
+thead th { 
+    background-color: #4a5568; 
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.95em;
+    border-bottom: 2px solid #2d3748; 
+    vertical-align: middle;
+}
+
+/* Antetul de tabel DESCHIS pentru matricea de input și matricea de joc afișată */
+table#matrixInputTable thead th,
+table.game-display-table thead th {
+    background-color: #f8f9fa; /* Gri foarte deschis */
+    color: #212529; /* Text negru */
+    font-weight: 600;
+    font-size: 0.95em;
+    border-bottom: 1px solid #dee2e6; /* Linie de jos mai subtilă */
+    vertical-align: middle;
+}
+
+
+/* Corpul Tabelului */
+tbody tr:nth-of-type(even) { 
+    background-color: #f8f9fa; 
+}
+tbody tr:hover {
+    background-color: #e2e6ea; 
+}
+
+/* Antet de rând (a_i, beta) - stil general, gri deschis */
+tbody th { 
+    background-color: #f1f3f5; /* Gri puțin mai închis decât #f8f9fa */
+    font-weight: 600;
+    color: #495057; /* Text gri închis */
+}
+
+/* Subsolul Tabelului (Z, Delta_k) */
+tfoot td { 
+    font-weight: bold;
+    background-color: #e9ecef; 
+    color: #343a40;
+    border-top: 2px solid #ced4da; 
+}
+
+.header-diagonal-generated {
+    position: relative; 
+    vertical-align: middle; 
+    background-image: linear-gradient(to bottom left, 
+        transparent calc(50% - 0.5px), 
+        #343a40 calc(50% - 0.5px), /* Culoarea liniei */
+        #343a40 calc(50% + 0.5px), 
+        transparent calc(50% + 0.5px));
+    background-size: 100% 100%; 
+    background-repeat: no-repeat;
+
+    /* MODIFICAT: Dimensiuni implicite (desktop) mai mari */
+    min-width: 85px;  /* Mărit pentru mai mult spațiu orizontal */
+    min-height: 55px; /* Mărit pentru mai mult spațiu vertical */
+    /* Padding-ul celulei (ex: 5px pentru #matrixInputTable th) va oferi spațiul intern */
+}
+
+.header-diagonal-generated .diag-text-top-right,
+.header-diagonal-generated .diag-text-bottom-left {
+    position: absolute;
+    font-size: 15px; 
+    font-weight: 600; 
+    line-height: 1;   
+    color: inherit;   
+    padding: 2px;     
+}
+
+.header-diagonal-generated .diag-text-top-right {
+    top: 6px;   /* Ușor ajustat pentru noua dimensiune */
+    right: 8px; /* Ușor ajustat pentru noua dimensiune */
+}
+
+.header-diagonal-generated .diag-text-bottom-left {
+    bottom: 6px; /* Ușor ajustat pentru noua dimensiune */
+    left: 8px;  /* Ușor ajustat pentru noua dimensiune */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header-diagonal-generated {
+        /* MODIFICAT: Dimensiuni mărite și pentru ecrane mai mici */
+        min-width: 65px;  /* Mărit față de valoarea anterioară de 50px/60px */
+        min-height: 45px; /* Mărit față de valoarea anterioară de 40px */
+    }
+    .header-diagonal-generated .diag-text-top-right,
+    .header-diagonal-generated .diag-text-bottom-left {
+        font-size: 11px; 
+    }
+    .header-diagonal-generated .diag-text-top-right {
+        top: 4px;    /* Ajustat pentru dimensiunea mai mică a celulei/fontului */
+        right: 6px;
+    }
+    .header-diagonal-generated .diag-text-bottom-left {
+        bottom: 4px; /* Ajustat pentru dimensiunea mai mică a celulei/fontului */
+        left: 6px;
+    }
+}
+
+
+/* Stilul pentru antetul deschis al tabelelor de joc (existent, verificăm consistența) */
+table#matrixInputTable thead th,
+table.game-display-table thead th {
+    background-color: #f8f9fa; /* Gri foarte deschis - acesta va fi fundalul sub linie */
+    color: #212529;           /* Text negru - acesta va fi moștenit de span-uri */
+    font-weight: 600;
+    font-size: 0.95em;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+
+/* Celula Diagonală (V1/V2) */
+.v1v2-diagonal-cell {
+    position: relative; 
+    background: linear-gradient(to bottom left, 
+        transparent calc(50% - 0.5px), 
+        #adb5bd calc(50% - 0.5px), 
+        #adb5bd calc(50% + 0.5px), 
+        transparent calc(50% + 0.5px)
+    );
+    background-color: #f1f3f5; /* Fundal consistent cu tbody th general */
+    min-height: 60px;      
+    padding: 2px;       
+    vertical-align: middle;
+    color: #2c3e50; 
+    box-sizing: border-box;
+}
+
+.v1v2-diagonal-cell span {
+    position: absolute;
+    font-size: 1em; 
+    font-weight: 500; 
+    line-height: 1.3;
+    white-space: nowrap; 
+    padding: 3px;
+}
+
+.v1v2-diagonal-cell .v1-text { 
+    top: 2px;
+    right: 4px;
+    text-align: right;
+}
+
+.v1v2-diagonal-cell .v2-text { 
+    bottom: 2px;
+    left: 4px;
+    text-align: left;
+}
+
+/* Coloana de Sumar (α și V1/V2) */
+.summary-column {
+    min-width: 180px; 
+    font-size: 0.9em; 
+    font-weight: 500;
+}
+.summary-column.v1v2-diagonal-cell { 
+     font-size: 0.9em; 
+}
+
+/* Stiluri pentru layout-ul Simplex Tabel - Analiză */
+.simplex-iteration-container {
+    display: flex;
+    flex-wrap: wrap; 
+    align-items: flex-start; 
+    margin-bottom: 25px; 
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.simplex-iteration-container:last-of-type { 
+    border-bottom: none;
+    margin-bottom: 15px; 
+}
+
+
+.simplex-table-wrapper {
+    flex: 3; 
+    padding-right: 25px; 
+    box-sizing: border-box;
+    min-width: 520px; 
+    overflow-x: auto; 
+}
+.simplex-table-wrapper h4 { 
+    margin-top: 0; 
+}
+.simplex-table-wrapper table {
+    margin-top: 10px; 
+    margin-bottom: 0; 
+    width: 100%; 
+}
+
+
+.simplex-analysis-wrapper {
+    flex: 2; 
+    padding-left: 15px; 
+    border-left: 1px solid #efefef; 
+    box-sizing: border-box;
+    min-width: 300px; 
+    margin-top: 0px; 
+}
+.simplex-analysis-wrapper h5 { 
+    margin-top: 0; 
+    color: #007bff; 
+    font-size: 1.15em; 
+    margin-bottom: 12px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #ced4da;
+}
+.simplex-analysis-wrapper p {
+    margin-top: 0; 
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+.simplex-analysis-wrapper p strong { 
+    color: #343a40; 
+}
+.simplex-analysis-wrapper p b { 
+    color: #17a2b8; 
+}
+
+
+/* Secțiunea de Interpretare */
+.results-container > div[style*="border"] { 
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 20px !important; 
+    padding: 15px !important; 
+}
+.results-container ul {
+    padding-left: 25px; 
+    list-style-position: outside;
+}
+.results-container ul li {
+    padding: 3px 0;
+    color: #495057;
+}
+.results-container p strong { 
+    color: #17a2b8;
+}
+
+/* Stil pentru săgețile de pivot */
+span[style*="color:#e74c3c"] { 
+    font-size: 1.1em; 
+}
+span[style*="color:#3498db"] { 
+    font-size: 1.1em;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 992px) { 
+    .simplex-iteration-container {
+        flex-direction: column; 
+    }
+    .simplex-table-wrapper {
+        width: 100%;
+        padding-right: 0;
+        min-width: unset; 
+        margin-bottom: 15px; 
+    }
+    .simplex-analysis-wrapper {
+        width: 100%;
+        min-width: unset; 
+        padding-left: 0;
+        border-left: none; 
+        margin-top: 10px; 
+    }
+    .simplex-analysis-wrapper h5 {
+        font-size: 1.1em; 
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+        padding: 15px;
+        border-radius: 0; 
+    }
+    .input-controls {
+        display: flex;
+        flex-direction: column;
+    }
+    .input-controls label {
+        margin-bottom: 5px;
+    }
+    .input-controls input[type="number"] {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    .input-controls button { 
+        width: 100%;
+        margin-bottom: 10px;
+    }
+     button { 
+        font-size: 0.95em;
+        padding: 12px 15px; 
+        display: block; 
+        width: 100%; 
+        margin-bottom: 10px; 
+        box-sizing: border-box;
+        margin-right: 0;
+    }
+    button:last-of-type {
+        margin-bottom: 0;
+    }
+
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.3em; }
+    h4 { font-size: 1.15em; }
+
+    table {
+        font-size: 0.85em; 
+    }
+    th, td {
+        padding: 8px 10px;
+    }
+    .header-diagonal, .header-diagonal-light { /* Aplicat la ambele */
+        min-width: 50px; 
+        min-height: 40px; 
+    }
+    /* Textul SVG este setat în SVG, dar putem încerca să nu-l facem prea mic */
+    /* .header-diagonal svg text {} */
+
+    .summary-column {
+        min-width: 120px;
+    }
+    .v1v2-diagonal-cell {
+        min-height: 50px;
+    }
+    .v1v2-diagonal-cell span {
+        font-size: 0.75em;
+    }
+
+    .game-matrix-container {
+    display: flex;
+    flex-wrap: wrap; /* Permite împachetarea pe ecrane mici */
+    align-items: flex-start; /* Aliniază itemii la începutul axei transversale */
+    margin-top: 25px; /* Spațiu deasupra containerului */
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    /* Eliminăm bordura de jos de aici pentru a nu interfera cu bordura H2 */
+    /* border-bottom: 1px solid #e0e0e0;  */
+}
+/* .game-matrix-container:last-of-type { 
+    border-bottom: none;
+} */ /* Eliminat, deoarece nu mai are bordură */
+
+.game-matrix-table-wrapper {
+    flex: 3; /* Tabelul ocupă mai mult spațiu */
+    padding-right: 25px; /* Spațiu între tabel și analiză */
+    box-sizing: border-box;
+    min-width: 450px; /* Lățime minimă înainte de împachetare */
+    overflow-x: auto; /* Scroll orizontal dacă tabelul e prea lat */
+}
+.game-matrix-table-wrapper h4 {
+    margin-top: 0; /* Titlul tabelului să fie aliniat la început */
+}
+.game-matrix-table-wrapper table {
+    margin-top: 10px; /* Spațiu între titlu și tabel */
+    margin-bottom: 0; /* Elimină spațiul de jos al tabelului */
+    width: 100%; /* Tabelul să umple wrapper-ul */
+}
+
+.game-matrix-analysis-wrapper {
+    flex: 2; /* Analiza ocupă mai puțin spațiu */
+    padding-left: 15px; /* Spațiu de la bordura stângă (dacă există) */
+    border-left: 1px solid #efefef; /* Linie fină de separare verticală */
+    box-sizing: border-box;
+    min-width: 280px; /* Lățime minimă pentru textul analizei */
+    margin-top: 0; /* Se aliniază cu partea de sus a .game-matrix-table-wrapper */
+    padding-top: 5px; /* Mic spațiu de sus în interiorul wrapper-ului de analiză */
+}
+.game-matrix-analysis-wrapper h5 { /* Titlu pentru secțiunea de analiză */
+    margin-top: 0; 
+    color: #17a2b8; /* Consistent cu alte titluri H4 */
+    font-size: 1.15em; 
+    margin-bottom: 12px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #ced4da;
+}
+.game-matrix-analysis-wrapper p {
+    margin-top: 0; 
+    margin-bottom: 10px;
+    font-size: 0.95em; /* Mărime font puțin mai mare pentru lizibilitate */
+    line-height: 1.6;
+}
+.game-matrix-analysis-wrapper p.saddle-point-found { /* Clasă specifică pentru mesajul de punct șa */
+    color: green !important; /* Asigură culoarea verde */
+    font-weight: 500;
+}
+
+/* Ajustări responsive pentru containerul matricei de joc */
+@media (max-width: 992px) { 
+    .game-matrix-container {
+        flex-direction: column; /* Stivuiește elementele pe ecrane mai mici */
+    }
+    .game-matrix-table-wrapper {
+        width: 100%;
+        padding-right: 0;
+        min-width: unset; 
+        margin-bottom: 20px; /* Spațiu între tabel și analiză când sunt stivuite */
+    }
+    .game-matrix-analysis-wrapper {
+        width: 100%;
+        min-width: unset; 
+        padding-left: 0;
+        border-left: none; /* Elimină linia de separare verticală */
+        margin-top: 10px; 
+        padding-top: 0;
+    }
+}
+
+.game-matrix-container {
+    display: flex;
+    flex-wrap: wrap; /* Permite împachetarea pe ecrane mici */
+    align-items: flex-start; /* Aliniază itemii la începutul axei transversale */
+    margin-top: 25px; /* Spațiu deasupra containerului */
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    /* Eliminăm bordura de jos de aici pentru a nu interfera cu bordura H2 */
+    /* border-bottom: 1px solid #e0e0e0;  */
+}
+/* .game-matrix-container:last-of-type { 
+    border-bottom: none;
+} */ /* Eliminat, deoarece nu mai are bordură */
+
+.game-matrix-table-wrapper {
+    flex: 3; /* Tabelul ocupă mai mult spațiu */
+    padding-right: 25px; /* Spațiu între tabel și analiză */
+    box-sizing: border-box;
+    min-width: 450px; /* Lățime minimă înainte de împachetare */
+    overflow-x: auto; /* Scroll orizontal dacă tabelul e prea lat */
+}
+.game-matrix-table-wrapper h4 {
+    margin-top: 0; /* Titlul tabelului să fie aliniat la început */
+}
+.game-matrix-table-wrapper table {
+    margin-top: 10px; /* Spațiu între titlu și tabel */
+    margin-bottom: 0; /* Elimină spațiul de jos al tabelului */
+    width: 100%; /* Tabelul să umple wrapper-ul */
+}
+
+.game-matrix-analysis-wrapper {
+    flex: 2; /* Analiza ocupă mai puțin spațiu */
+    padding-left: 15px; /* Spațiu de la bordura stângă (dacă există) */
+    border-left: 1px solid #efefef; /* Linie fină de separare verticală */
+    box-sizing: border-box;
+    min-width: 280px; /* Lățime minimă pentru textul analizei */
+    margin-top: 0; /* Se aliniază cu partea de sus a .game-matrix-table-wrapper */
+    padding-top: 5px; /* Mic spațiu de sus în interiorul wrapper-ului de analiză */
+}
+.game-matrix-analysis-wrapper h5 { /* Titlu pentru secțiunea de analiză */
+    margin-top: 0; 
+    color: #17a2b8; /* Consistent cu alte titluri H4 */
+    font-size: 1.15em; 
+    margin-bottom: 12px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #ced4da;
+}
+.game-matrix-analysis-wrapper p {
+    margin-top: 0; 
+    margin-bottom: 10px;
+    font-size: 0.95em; /* Mărime font puțin mai mare pentru lizibilitate */
+    line-height: 1.6;
+}
+.game-matrix-analysis-wrapper p.saddle-point-found { /* Clasă specifică pentru mesajul de punct șa */
+    color: green !important; /* Asigură culoarea verde */
+    font-weight: 500;
+}
+
+/* Ajustări responsive pentru containerul matricei de joc */
+@media (max-width: 992px) { 
+    .game-matrix-container {
+        flex-direction: column; /* Stivuiește elementele pe ecrane mai mici */
+    }
+    .game-matrix-table-wrapper {
+        width: 100%;
+        padding-right: 0;
+        min-width: unset; 
+        margin-bottom: 20px; /* Spațiu între tabel și analiză când sunt stivuite */
+    }
+    .game-matrix-analysis-wrapper {
+        width: 100%;
+        min-width: unset; 
+        padding-left: 0;
+        border-left: none; /* Elimină linia de separare verticală */
+        margin-top: 10px; 
+        padding-top: 0;
+    }
+}
+
+}
